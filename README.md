@@ -19,7 +19,7 @@ ollama pull qwen3:4b-instruct
 ```
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Gknows1234/lenny-growth-assistant.git
 cd lenny-growth-assistant
 cp .env.example .env             # Windows PowerShell: Copy-Item .env.example .env
 docker compose up --build
@@ -274,7 +274,7 @@ card. The application will not silently switch providers.
 
 ## Submission checklist
 
-- [ ] Replace `<your-repository-url>` above and make the GitHub repository public.
+- [x] Publish the source at <https://github.com/Gknows1234/lenny-growth-assistant>.
 - [ ] Run the clean-clone test in `docs/manual-test-plan.md`.
 - [ ] Record the demo with the outline in `docs/demo-script.md` and add its YouTube URL here.
 - [ ] Confirm `.env` and secrets are absent from `git status` and history.
