@@ -164,6 +164,7 @@ async def index_checkout(root: Path, limit: int) -> tuple[int, int]:
         )
         db.add(run)
         await db.commit()
+        run_id = run.id
         try:
             for path in transcript_files:
                 post = frontmatter.load(path)
@@ -210,6 +211,9 @@ async def index_checkout(root: Path, limit: int) -> tuple[int, int]:
                             source_metadata=clean_metadata(post.metadata),
                         )
                     )
+                    # No ORM relationship links these rows, so make the FK parent durable
+                    # before SQLAlchemy batches the transcript chunk inserts.
+                    await db.flush()
 
                 for ordinal, (chunk, start) in enumerate(chunks):
                     chunk_digest = hashlib.sha256(
@@ -240,7 +244,7 @@ async def index_checkout(root: Path, limit: int) -> tuple[int, int]:
             return sources_seen, chunks_written
         except Exception as exc:
             await db.rollback()
-            stored = await db.get(IngestionRun, run.id)
+            stored = await db.get(IngestionRun, run_id)
             if stored:
                 stored.status = "failed"
                 stored.error = str(exc)[:2_000]

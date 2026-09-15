@@ -1,8 +1,12 @@
 .git
 .env
+.runtime
+.tools
 .venv
+.coverage
 __pycache__
 .pytest_cache
 data/transcripts
+dist
+htmlcov
 agent-transcripts/private
-

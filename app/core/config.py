@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = Field(default=180, ge=1, le=600)
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-5-mini"
+    openai_model: str = "gpt-4o-mini"
     openai_timeout_seconds: float = Field(default=180, ge=1, le=600)
     anthropic_api_key: str | None = None
     claude_model: str = "claude-sonnet-4-6"

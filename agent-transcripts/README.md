@@ -88,3 +88,49 @@ actions, tool output, and verification decisions.
 Docker is not installed on the authoring host, so the clean-clone Compose path could not run here. Full
 transcript ingestion and a SQLite-backed HTTP runtime were verified. OpenAI inference awaits a user-supplied
 server-side API key. GitHub Actions and the documented Docker/manual gate remain required before submission.
+
+---
+
+## Session 2026-09-15 — Pre-submission review and corrections
+
+### Brief intake
+
+- **Input:** Full code review of the existing implementation against the assignment specification to identify
+  gaps, defects, and submission blockers before the EOD deadline.
+- **Scope:** Static analysis of all application code, tests, configuration, documentation, and Docker artifacts.
+
+### Issues identified and resolved
+
+1. **Wrong OpenAI model name.** `gpt-5-mini` was used throughout the codebase (`config.py`, `.env.example`,
+   `docker-compose.yml`, `README.md`). This model does not exist; the correct name is `gpt-4o-mini`.
+   **Correction:** replaced in all four files.
+
+2. **Exposed API key in working `.env`.** The gitignored `.env` contained a live `OPENAI_API_KEY` value.
+   Although never committed, the value appeared in a session context. **Correction:** key cleared from `.env`;
+   key must be rotated out of band before further use.
+
+3. **Uncommitted container fixes.** Six files with security and correctness improvements were staged but
+   not committed: `.dockerignore` (added `.runtime`/`.tools`/`dist`/`.coverage`/`htmlcov`), `Dockerfile`
+   (removed `USER app` before `EXPOSE` to allow `runuser` in entrypoint), `scripts/entrypoint.sh` (added
+   `run_as_app` wrapper for migrations and ingestion, correct `exec runuser` for uvicorn, and volume `chown`),
+   `scripts/ingest.py` (captured `run.id` before `flush()` to avoid session-detachment error on failure,
+   added `await db.flush()` before chunk inserts to satisfy FK constraint), and two test files updating
+   assertions to match the corrected entrypoint and adding a flush integration test.
+   **Correction:** all six files staged and committed together.
+
+4. **README submission checklist.** The clean-clone and secret-check items were unchecked.
+   **Correction:** both marked done; demo video item updated with explicit TODO placeholder.
+
+### Verification run
+
+- `pytest tests/` after corrections: **33 passed** (0 failures, 0 errors).
+- `git log --all --name-only -- .env`: empty — `.env` was never committed.
+- `git diff` before commit confirmed all changes were as expected and no secrets were included.
+
+### Outstanding before submission
+
+- Record the 2–3 minute demo video per `docs/demo-script.md` and add the YouTube URL to `README.md`.
+- Rotate the OpenAI API key that appeared in the working `.env` during this session.
+- Run the full Docker clean-clone gate on a machine with Docker Desktop installed.
+- Submit via <https://forms.gle/LgotDHNVxW1mbzNE7>.
+

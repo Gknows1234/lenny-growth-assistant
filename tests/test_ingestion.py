@@ -2,7 +2,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.db.base import Base, IngestionRun, TranscriptChunk, TranscriptSource
+from scripts import ingest
 from scripts.ingest import (
     archive_url,
     chunk_transcript,
@@ -65,3 +69,34 @@ def test_replace_directory_contents_preserves_mountpoint() -> None:
         assert destination.is_dir()
         assert not (destination / "old.txt").exists()
         assert (destination / "episodes" / "new.md").read_text(encoding="utf-8") == "new"
+
+
+async def test_index_checkout_flushes_source_before_chunks(monkeypatch) -> None:
+    with TemporaryDirectory(dir=Path.cwd()) as temporary:
+        root = Path(temporary)
+        episode = root / "episodes" / "guest-one"
+        episode.mkdir(parents=True)
+        (episode / "transcript.md").write_text(
+            "---\nguest: Guest One\ntitle: Activation\n---\n\n"
+            "Guest One (00:01): A useful activation insight.",
+            encoding="utf-8",
+        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as connection:
+            await connection.execute(text("PRAGMA foreign_keys=ON"))
+            await connection.run_sync(Base.metadata.create_all)
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        monkeypatch.setattr(ingest, "SessionLocal", factory)
+
+        sources, chunks = await ingest.index_checkout(root, 0)
+
+        async with factory() as db:
+            assert await db.scalar(select(func.count()).select_from(TranscriptSource)) == 1
+            assert await db.scalar(select(func.count()).select_from(TranscriptChunk)) == 1
+            run = await db.scalar(select(IngestionRun))
+            assert run is not None
+            assert run.status == "completed"
+        await engine.dispose()
+
+    assert sources == 1
+    assert chunks == 1

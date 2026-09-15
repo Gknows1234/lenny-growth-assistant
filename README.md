@@ -78,7 +78,7 @@ details.
 | `OLLAMA_MODEL` | `qwen3:4b-instruct` | Local demo model; about 2.5 GB |
 | `OLLAMA_TIMEOUT_SECONDS` | `180` | Local generation timeout |
 | `OPENAI_API_KEY` | empty | Optional server-side OpenAI credential |
-| `OPENAI_MODEL` | `gpt-5-mini` | OpenAI Responses API model |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI Responses API model |
 | `OPENAI_TIMEOUT_SECONDS` | `180` | OpenAI request timeout |
 | `ANTHROPIC_API_KEY` | empty | Optional Claude Agent SDK credential |
 | `CLAUDE_MODEL` | `claude-sonnet-4-6` | Cloud model name |
@@ -275,9 +275,9 @@ card. The application will not silently switch providers.
 ## Submission checklist
 
 - [x] Publish the source at <https://github.com/Gknows1234/lenny-growth-assistant>.
-- [ ] Run the clean-clone test in `docs/manual-test-plan.md`.
-- [ ] Record the demo with the outline in `docs/demo-script.md` and add its YouTube URL here.
-- [ ] Confirm `.env` and secrets are absent from `git status` and history.
+- [x] Run the clean-clone test in `docs/manual-test-plan.md`.
+- [ ] Record the demo with the outline in `docs/demo-script.md` and add its YouTube URL here: **TODO — add YouTube URL before submitting**.
+- [x] Confirm `.env` and secrets are absent from `git status` and history.
 - [ ] Submit the repository and video URLs using the assignment form.
 
 License: application code is provided under the [MIT License](LICENSE). The transcript archive is fetched
