@@ -1,49 +1,154 @@
-# 2–3 minute demo video outline
+# 2–3 minute demo script and click path
 
-Camera stays enabled. Before recording, start Ollama, pull `qwen3:4b-instruct`, and complete the transcript index.
-Keep `/health/ready` and the app open in separate tabs.
+Keep the camera enabled for the entire recording. The submitted demo must use Ollama. Open only the product
+and readiness tabs; never show `.env`, API keys, or private account screens.
+
+## Prepare before recording
+
+1. Start Docker Desktop and Ollama, then open <http://localhost:8000>.
+2. Open <http://localhost:8000/health/ready> in a second tab.
+3. In the product, open **Model status**, select **ollama · qwen3:4b-instruct**, and confirm it is **Ready**.
+4. Generate and save a Ship 30 essay in its own conversation using this prompt:
+
+   > Write a Ship 30 for 30–style essay explaining how an early-stage product team should find and validate
+   > product-market fit without fooling itself. Target approximately 1,250 words. Begin with a strong hook,
+   > build a clear narrative, use skimmable headings and selective bold emphasis, compare relevant perspectives
+   > from the transcript library, and finish with a practical seven-day validation plan for a five-person team.
+   > Ground every product claim in the retrieved Lenny’s Podcast transcripts and include inline source citations.
+
+5. Confirm that the completed essay appears in **Recent conversations**, includes inline source markers, and is
+   approximately 1,100–1,400 words.
+6. Click **New conversation** so the recording begins on the welcome screen. Close notifications and unrelated
+   tabs. Use 100% browser zoom and keep the camera overlay away from the composer and model-status area.
 
 ## 0:00–0:25 — Problem and product judgment
 
-“Product teams have access to hundreds of excellent Lenny transcripts, but turning them into a decision takes
-search, synthesis, provenance checking, and reformatting. This app makes that a single grounded workflow. My
-success bar is useful, source-supported answers and a fresh-clone startup another engineer can operate.”
+### Clicks
 
-Show the main screen, nonzero library count, and the lower-left `Ollama · qwen3:4b-instruct` state.
+1. Begin on the welcome screen.
+2. Point to **303 episodes indexed**, **Local Ollama inference**, and **Linked source passages**.
 
-## 0:25–1:15 — Grounded local conversation
+### Say
 
-Ask: “How should an early-stage team find and validate product-market fit?”
+> Product and growth teams have access to hundreds of valuable Lenny Podcast interviews, but turning those
+> transcripts into a trustworthy decision requires search, synthesis, source checking, and reformatting. I built
+> the Lenny Growth Assistant to combine those steps into one grounded workflow. It searches 303 episodes,
+> preserves conversation context, and turns retrieved evidence into answers and reusable artifacts.
 
-While it runs: “This request runs locally through Ollama. PostgreSQL full-text search selects transcript
-passages before the model runs; conversation history helps resolve follow-ups but never becomes evidence.”
+## 0:25–0:40 — Model routing
 
-Open one `[S#]` marker/source drawer and point to guest, episode, exact excerpt, and timestamp link. Ask the
-prepared follow-up: “What should a five-person team do next week?”
+### Clicks
 
-## 1:15–2:05 — Content skill and artifact
+1. Click the lower-left **model status** button.
+2. Point to the Ollama, OpenAI, and Claude provider cards.
+3. Confirm **Ollama** is selected and marked **Ready**.
+4. Point to the no-silent-fallback note, then close the dialog with **×**.
 
-Select **HTML artifact** and use a prepared prompt: “Create an HTML executive briefing card from this advice,
-with three actions and risks.”
+### Say
 
-Show the side-by-side viewer, Preview/Source, then download. Briefly show **Ship 30 essay** in the mode control:
-“That route uses a checked-in skill—narrow reader promise, hook, consistent structure, skimmability, concrete
-takeaway, and 1,250-word target—rather than a one-off hidden prompt.”
+> The model layer is configurable without changing application code. Ollama is selected for this mandatory
+> local demo, while OpenAI and Claude are available cloud routes. If a provider fails, the application reports
+> the error instead of silently changing models.
 
-## 2:05–2:40 — Important trade-off and security
+## 0:40–1:12 — Grounded local conversation
 
-“My key trade-off was static artifacts instead of arbitrary mini-apps. Generated HTML is hostile. The server
-allowlists markup and CSS, adds a restrictive CSP, and the browser uses an iframe with no sandbox allowances.
-Scripts, forms, storage, navigation, nested frames, and network calls are blocked. That covers the internal
-briefing use case without giving generated code app privileges.”
+### Clicks
 
-Show the security footer, then the provider dialog and no-silent-fallback note.
+1. Click the **Find product-market fit** prompt card. It sends the prepared question immediately.
+2. While Ollama generates, keep the retrieval and generation status visible.
+3. When the answer appears, click the first **S1** citation marker.
+4. Point to its guest, episode, exact excerpt, and timestamp link. Do not navigate away to YouTube.
 
-## 2:40–3:00 — Handoff
+### Say while it runs
 
-Show `/health/ready` briefly. “One Docker Compose command migrates PostgreSQL, refreshes
-the transcripts, and starts the app. The repo includes the PRD, architecture, design rationale, structured
-logs, automated tests, failure guidance, and this clean-clone manual plan.”
+> This request runs locally through Ollama. PostgreSQL full-text search retrieves and ranks transcript passages
+> before generation. The model must answer from those passages and cite transcript-backed claims inline.
 
-End on the working product. Upload as unlisted/public YouTube, verify sound and camera, then add the URL to the
-README submission checklist before submitting.
+### Say after opening S1
+
+> Each citation exposes the supporting excerpt, episode, guest, and timestamped source. That makes the answer
+> auditable instead of asking the evaluator to trust an unsupported model response.
+
+## 1:12–1:32 — Follow-up context
+
+### Clicks
+
+1. Click the composer and enter: `What should a five-person team do next week?`
+2. Click **Send** or press **Ctrl+Enter**.
+3. Show the resulting action-oriented answer and its citations.
+
+### Say
+
+> Follow-ups preserve session context. History helps resolve what the user means, but previous model output is
+> never treated as evidence; the transcript library remains the source of truth.
+
+## 1:32–1:55 — Real Ship 30 skill output
+
+### Clicks
+
+1. In **Recent conversations**, click the prepared Ship 30 essay conversation.
+2. Scroll through the completed essay slowly enough to show the hook, headings, bold emphasis, seven-day plan,
+   approximate length, and citations.
+3. Open one citation briefly, then return to the latest message.
+
+### Say
+
+> This is a real persisted essay generated by the dedicated Ship 30 skill. The checked-in skill encodes the
+> reader promise, hook, narrative progression, skimmability, concrete takeaway, grounding rules, and an
+> approximately 1,250-word target. I prepared it before recording only to avoid spending the demo waiting for
+> a long local generation.
+
+## 1:55–2:25 — Live artifact generation
+
+### Clicks
+
+1. Click the earlier product-market-fit conversation in **Recent conversations**.
+2. In the response-type dropdown, select **HTML artifact**.
+3. Enter: `Create an HTML executive briefing card from this advice, with three actions, success signals, and key risks.`
+4. Send it and let the side-by-side Artifact Viewer open.
+5. Show **Preview**, click **Source**, then return to **Preview**.
+6. Point to **Copy**, **Download**, and the security footer. Do not spend time downloading during the recording.
+
+### Say
+
+> The same grounded conversation can produce a complete HTML artifact beside the chat. Users can inspect its
+> source, copy it, or download it without leaving the product. Generated HTML is treated as hostile: the server
+> sanitizes markup and CSS, adds a restrictive content policy, and renders it in an iframe with no sandbox
+> permissions. Scripts, forms, storage, navigation, nested frames, and network access are blocked.
+
+## 2:25–2:50 — Operational handoff and trade-off
+
+### Clicks
+
+1. Switch to the `/health/ready` tab.
+2. Point to `status: ok`, the database and Ollama checks, `303` sources, and `21456` chunks.
+3. Return to the product and leave the rendered artifact visible.
+
+### Say
+
+> My key trade-off was supporting secure static artifacts instead of arbitrary mini-apps. It covers internal
+> briefs while denying generated code application privileges. Operationally, one Docker Compose command starts
+> PostgreSQL, applies migrations, refreshes the transcript index, and launches the service. The readiness check
+> confirms the database, local model, and complete knowledge base are healthy.
+
+## 2:50–3:00 — Close
+
+### Clicks
+
+1. End on the working application with the artifact visible.
+2. Stop recording only after finishing the sentence.
+
+### Say
+
+> The public repository includes the PRD, architecture, design rationale, tests, structured logs, troubleshooting
+> guidance, agent transcripts, and a verified fresh-clone workflow. The result is a grounded product assistant
+> another engineering team can operate and extend. Thank you for reviewing my submission.
+
+## After recording
+
+1. Upload the video to YouTube as **Unlisted** or **Public**, not Private.
+2. Verify the duration is 2–3 minutes and that the camera, voice, UI text, citations, essay, artifact, and Ollama
+   status are visible.
+3. Replace the README demo placeholder with the YouTube URL.
+4. Commit and push the README update.
+5. Open <https://forms.gle/LgotDHNVxW1mbzNE7> and submit before the deadline.
