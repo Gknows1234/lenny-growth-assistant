@@ -277,9 +277,9 @@ card. The application will not silently switch providers.
 
 - [x] Publish the source at <https://github.com/Gknows1234/lenny-growth-assistant>.
 - [x] Run the clean-clone test in `docs/manual-test-plan.md`.
-- [ ] Record the demo with the outline in `docs/demo-script.md` and add its YouTube URL here: **TODO — add YouTube URL before submitting**.
+- [x] Record the demo with the outline in `docs/demo-script.md`: [YouTube demo](https://youtu.be/l5J-VLarZsk).
 - [x] Confirm `.env` and secrets are absent from `git status` and history.
-- [ ] Submit the repository and video URLs using the assignment form.
+- [x] Submit the repository and video URLs using the assignment form.
 
 License: application code is provided under the [MIT License](LICENSE). The transcript archive is fetched
 at runtime and remains subject to its source repository's terms.
