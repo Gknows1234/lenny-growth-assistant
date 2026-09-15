@@ -10,10 +10,12 @@ logs:
 	docker compose logs -f api db
 
 test:
-	docker compose run --rm --no-deps api pytest
+	docker build --target test -t lenny-growth-assistant-test .
+	docker run --rm lenny-growth-assistant-test pytest
 
 lint:
-	docker compose run --rm --no-deps api ruff check .
+	docker build --target test -t lenny-growth-assistant-test .
+	docker run --rm lenny-growth-assistant-test ruff check app scripts tests
 
 ingest:
-	docker compose exec api python scripts/ingest.py --refresh
+	docker compose exec api python -m scripts.ingest --refresh

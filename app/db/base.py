@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -30,6 +30,7 @@ class TimestampMixin:
 
 class ChatSession(TimestampMixin, Base):
     __tablename__ = "chat_sessions"
+    __table_args__ = (Index("ix_chat_sessions_user_updated", "user_id", "updated_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     title: Mapped[str | None] = mapped_column(String(140))
@@ -52,6 +53,7 @@ class Artifact(TimestampMixin, Base):
 
 class Message(TimestampMixin, Base):
     __tablename__ = "messages"
+    __table_args__ = (Index("ix_messages_session_created", "session_id", "created_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     session_id: Mapped[str] = mapped_column(

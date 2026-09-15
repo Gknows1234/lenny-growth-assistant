@@ -19,8 +19,9 @@ class AppError(Exception):
         super().__init__(message)
 
 
-async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    details = {**exc.details, "trace_id": getattr(request.state, "trace_id", None)}
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
+        content={"error": {"code": exc.code, "message": exc.message, "details": details}},
     )

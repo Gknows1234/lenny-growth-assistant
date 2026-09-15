@@ -41,6 +41,7 @@ const els = {
   providerModel: $("#sidebar-model"),
   providerOrb: $("#sidebar-orb"),
   knowledgeCount: $("#knowledge-count"),
+  welcomeSourceCount: $("#welcome-source-count"),
   knowledgePill: $("#knowledge-pill"),
   modifierKey: $("#modifier-key"),
   toast: $("#toast"),
@@ -48,20 +49,26 @@ const els = {
 };
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-User-Id": state.userId,
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": state.userId,
+        ...(options.headers || {}),
+      },
+    });
+  } catch (_) {
+    throw new Error("The local service is unreachable. Confirm Docker is running, then retry.");
+  }
   let payload = {};
   try { payload = await response.json(); } catch (_) { /* empty response */ }
   if (!response.ok) {
     const error = new Error(payload?.error?.message || "Something went wrong.");
     error.code = payload?.error?.code;
     error.details = payload?.error?.details;
+    error.traceId = payload?.error?.details?.trace_id || response.headers.get("X-Request-Id");
     throw error;
   }
   return payload;
@@ -140,6 +147,11 @@ function showToast(message, type = "info") {
   showToast.timer = setTimeout(() => { els.toast.className = "toast"; }, 4000);
 }
 
+function showRequestError(error) {
+  const suffix = error.traceId ? ` · Request ${error.traceId.slice(0, 8)}` : "";
+  showToast(`${error.message || "The request failed."}${suffix}`, "error");
+}
+
 function formatTime(seconds) {
   if (seconds == null) return "";
   const hours = Math.floor(seconds / 3600);
@@ -186,14 +198,12 @@ function sourceMarkup(citations = []) {
     </div>`;
 }
 
-function messageMarkup(message, loading = false) {
+function messageMarkup(message) {
   if (message.role === "user") {
     return `<article class="message user"><div class="message-body">${escapeHtml(message.content)}</div></article>`;
   }
   const model = message.model ? `<span class="model-badge">${escapeHtml(message.model)}</span>` : "";
-  const content = loading
-    ? '<div class="loading-dots" aria-label="Thinking"><span></span><span></span><span></span></div>'
-    : renderMarkdown(message.content);
+  const content = renderMarkdown(message.content);
   const artifact = message.artifact
     ? `<button class="artifact-chip" type="button" data-artifact-id="${message.artifact.id}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM13 5v14" /></svg>
@@ -211,39 +221,33 @@ function messageMarkup(message, loading = false) {
   </article>`;
 }
 
-function bindMessageInteractions() {
-  document.querySelectorAll(".sources-toggle").forEach((button) => {
-    button.onclick = () => {
-      const group = button.closest(".sources");
-      const open = group.classList.toggle("open");
-      button.setAttribute("aria-expanded", String(open));
-    };
-  });
-  document.querySelectorAll(".citation-marker").forEach((button) => {
-    button.onclick = () => {
-      const message = button.closest(".message");
-      const group = message.querySelector(".sources");
-      if (!group) return;
-      group.classList.add("open");
-      group.querySelector(".sources-toggle").setAttribute("aria-expanded", "true");
-      group.querySelector(`[data-source="${button.dataset.citation}"]`)?.focus();
-    };
-  });
-  document.querySelectorAll(".artifact-chip").forEach((button) => {
-    button.onclick = () => {
-      const artifact = currentMessages.find((item) => item.artifact?.id === button.dataset.artifactId)?.artifact;
-      if (artifact) openArtifact(artifact);
-    };
-  });
-}
-
 let currentMessages = [];
+els.messages.onclick = (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  if (button.classList.contains("sources-toggle")) {
+    const group = button.closest(".sources");
+    const open = group.classList.toggle("open");
+    button.setAttribute("aria-expanded", String(open));
+  } else if (button.classList.contains("citation-marker")) {
+    const group = button.closest(".message")?.querySelector(".sources");
+    if (!group) return;
+    group.classList.add("open");
+    group.querySelector(".sources-toggle").setAttribute("aria-expanded", "true");
+    group.querySelector(`[data-source="${button.dataset.citation}"]`)?.focus();
+  } else if (button.classList.contains("artifact-chip")) {
+    const artifact = currentMessages.find(
+      (item) => item.artifact?.id === button.dataset.artifactId,
+    )?.artifact;
+    if (artifact) openArtifact(artifact);
+  }
+};
+
 function renderMessages(messages) {
   currentMessages = messages;
   els.welcome.hidden = messages.length > 0;
   els.messages.innerHTML = messages.map((message) => messageMarkup(message)).join("");
   els.messages.setAttribute("aria-busy", "false");
-  bindMessageInteractions();
   requestAnimationFrame(() => { els.scroll.scrollTop = els.scroll.scrollHeight; });
 }
 
@@ -253,10 +257,12 @@ function renderHistory() {
     <button class="history-item ${session.id === state.sessionId ? "active" : ""}" data-session-id="${session.id}">
       ${escapeHtml(session.title || "New conversation")}
     </button>`).join("");
-  els.history.querySelectorAll(".history-item").forEach((button) => {
-    button.onclick = () => loadSession(button.dataset.sessionId);
-  });
 }
+
+els.history.onclick = (event) => {
+  const button = event.target.closest(".history-item");
+  if (button && !button.disabled) loadSession(button.dataset.sessionId);
+};
 
 async function refreshSessions() {
   state.sessions = await api("/api/sessions");
@@ -291,14 +297,31 @@ async function loadSession(id) {
     const latestArtifact = [...session.messages].reverse().find((item) => item.artifact)?.artifact;
     if (latestArtifact && window.innerWidth > 820) openArtifact(latestArtifact);
   } catch (error) {
-    showToast(error.message, "error");
+    showRequestError(error);
   }
 }
 
 function loadingMessage() {
   els.welcome.hidden = true;
   els.messages.setAttribute("aria-busy", "true");
-  els.messages.insertAdjacentHTML("beforeend", messageMarkup({ role: "assistant" }, true));
+  els.messages.insertAdjacentHTML(
+    "beforeend",
+    `<article class="message assistant" data-message-id="loading">
+      <div class="avatar" aria-hidden="true">L</div>
+      <div class="message-body">
+        <div class="message-meta"><strong>Lenny Assistant</strong><span class="model-badge">Working locally</span></div>
+        <div class="loading-state" role="status">
+          <span class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="loading-label">Finding the strongest transcript evidence…</span>
+        </div>
+      </div>
+    </article>`,
+  );
+  clearTimeout(loadingMessage.timer);
+  loadingMessage.timer = setTimeout(() => {
+    const label = document.querySelector('[data-message-id="loading"] .loading-label');
+    if (label) label.textContent = "Synthesizing the evidence with the selected model…";
+  }, 1400);
   els.scroll.scrollTop = els.scroll.scrollHeight;
 }
 
@@ -307,6 +330,9 @@ function updateComposerState() {
   els.newChat.disabled = state.sending;
   els.mode.disabled = state.sending;
   els.form.setAttribute("aria-busy", String(state.sending));
+  els.history.querySelectorAll(".history-item").forEach((button) => {
+    button.disabled = state.sending;
+  });
 }
 
 async function sendMessage(content) {
@@ -330,14 +356,21 @@ async function sendMessage(content) {
         provider: state.provider || null,
       }),
     });
-    await loadSession(targetSessionId);
-    if (payload.message.artifact) openArtifact(payload.message.artifact);
+    clearTimeout(loadingMessage.timer);
+    document.querySelector('[data-message-id="loading"]')?.remove();
+    if (state.sessionId === targetSessionId) {
+      currentMessages.push(payload.message);
+      renderMessages(currentMessages);
+      els.title.textContent = clean.replace(/\s+/g, " ").slice(0, 72);
+      if (payload.message.artifact) openArtifact(payload.message.artifact);
+    }
     await refreshSessions();
   } catch (error) {
+    clearTimeout(loadingMessage.timer);
     document.querySelector('[data-message-id="loading"]')?.remove();
     els.messages.setAttribute("aria-busy", "false");
     if (!state.sessionId) els.input.value = clean;
-    showToast(error.message, "error");
+    showRequestError(error);
   } finally {
     state.sending = false;
     updateComposerState();
@@ -386,9 +419,10 @@ function renderConfig(config) {
   els.providerModel.textContent = selected?.model || "Not configured";
   els.providerOrb.className = `status-orb ${selected?.available ? "online" : "error"}`;
   els.knowledgeCount.textContent = `${config.knowledge_base.sources.toLocaleString()} episodes · ${config.knowledge_base.chunks.toLocaleString()} passages`;
+  els.welcomeSourceCount.textContent = config.knowledge_base.sources.toLocaleString();
   els.providerOptions.innerHTML = config.providers.map((provider) => `
     <label class="provider-card">
-      <input type="radio" name="provider" value="${provider.name}" ${provider.name === state.provider ? "checked" : ""}>
+      <input type="radio" name="provider" value="${provider.name}" ${provider.name === state.provider ? "checked" : ""} ${provider.available ? "" : "disabled"}>
       <span class="provider-card-head">
         <strong>${escapeHtml(provider.name)}</strong>
         <span class="availability ${provider.available ? "" : "offline"}">${provider.available ? "Ready" : "Unavailable"}</span>
@@ -432,7 +466,7 @@ els.newChat.onclick = async () => {
     closeSidebar();
     els.input.focus();
   } catch (error) {
-    showToast(error.message, "error");
+    showRequestError(error);
   }
 };
 document.querySelectorAll(".prompt-card").forEach((button) => {
@@ -494,7 +528,7 @@ async function init() {
     els.providerModel.textContent = "Service unavailable";
     els.providerOrb.className = "status-orb error";
     els.knowledgeCount.textContent = "Library unavailable";
-    showToast(error.message || "The service is not ready yet. Refresh and try again.", "error");
+    showRequestError(error);
   }
 }
 

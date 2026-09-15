@@ -1,11 +1,13 @@
 import logging
 import os
+import time
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Protocol
 
 import httpx
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 
 logger = logging.getLogger(__name__)
@@ -241,6 +243,18 @@ class ProviderRegistry:
             "openai": OpenAIProvider(settings),
             "claude": ClaudeAgentSDKProvider(settings),
         }
+        self._availability: dict[str, tuple[float, tuple[bool, str | None]]] = {}
+
+    async def available(
+        self, provider: LLMProvider, max_age_seconds: float = 10
+    ) -> tuple[bool, str | None]:
+        cached = self._availability.get(provider.name)
+        now = time.monotonic()
+        if cached and now - cached[0] < max_age_seconds:
+            return cached[1]
+        result = await provider.available()
+        self._availability[provider.name] = (now, result)
+        return result
 
     def get(self, requested: str | None = None) -> LLMProvider:
         name = requested or self.settings.llm_provider
@@ -248,3 +262,8 @@ class ProviderRegistry:
         if provider is None:
             raise AppError("unknown_provider", f"Unknown provider: {name}", 400)
         return provider
+
+
+@lru_cache
+def get_provider_registry() -> ProviderRegistry:
+    return ProviderRegistry(get_settings())

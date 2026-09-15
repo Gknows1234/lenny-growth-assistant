@@ -1,8 +1,8 @@
 import logging
 import re
+import time
 
 from app.core.config import Settings
-from app.core.errors import AppError
 from app.models.schemas import ArtifactView, Citation, GenerationMode, MessageCreate, MessageView
 from app.repositories.chat import ChatRepository
 from app.services.artifacts import render_artifact, strip_code_fence
@@ -20,6 +20,21 @@ CURRENT_FACT_RE = re.compile(
     r"current time|latest news)\b",
     re.IGNORECASE,
 )
+FOLLOW_UP_RE = re.compile(
+    r"\b(this|that|these|those|they|them|their|it|guests?|previous|above|"
+    r"disagree|compare|next week|do next)\b",
+    re.IGNORECASE,
+)
+
+
+def _retrieval_query(content: str, prior_user_messages: list[str]) -> str:
+    current = re.sub(r"\s+", " ", content).strip()[:1_600]
+    if prior_user_messages and FOLLOW_UP_RE.search(current):
+        previous = re.sub(r"\s+", " ", prior_user_messages[-1]).strip()[:1_000]
+        # Put the earlier, content-rich question last because retrieval treats
+        # trailing terms as the highest-signal focus before relaxing the query.
+        return f"{current} {previous}"
+    return current
 
 
 def _ground_citations(text: str, citations: list[Citation]) -> str:
@@ -62,7 +77,9 @@ class ChatService:
         self, session_id: str, user_id: str, request: MessageCreate
     ) -> tuple[MessageView, str]:
         await self.repository.require_session(session_id, user_id)
-        history = await self.repository.list_messages(session_id)
+        history = await self.repository.list_recent_messages(
+            session_id, self.settings.max_history_messages
+        )
         mode = route_mode(request.content, request.mode)
         await self.repository.add_message(
             session_id, "user", request.content.strip(), mode=mode.value
@@ -78,11 +95,11 @@ class ChatService:
             )
             return self._message_view(saved), mode.value
 
-        recent_user_context = [item.content for item in history if item.role == "user"][-2:]
-        retrieval_query = " ".join(
-            [*(item[:300] for item in recent_user_context), request.content[:1_600]]
-        ).strip()
+        recent_user_context = [item.content for item in history if item.role == "user"]
+        retrieval_query = _retrieval_query(request.content, recent_user_context)
+        retrieval_started = time.perf_counter()
         hits = await self.retriever.retrieve(retrieval_query)
+        retrieval_ms = round((time.perf_counter() - retrieval_started) * 1_000, 1)
         citations = self.retriever.citations(hits)
 
         if not hits:
@@ -96,14 +113,6 @@ class ChatService:
             return self._message_view(saved), mode.value
 
         provider = self.providers.get(request.provider.value if request.provider else None)
-        available, reason = await provider.available()
-        if not available:
-            raise AppError(
-                "provider_unavailable",
-                reason or "The selected model provider is unavailable.",
-                503,
-                {"provider": provider.name, "model": provider.model},
-            )
 
         context = build_context(hits, self.settings.max_context_chars)
         system = f"{system_for(mode)}\n\nREFERENCE PASSAGES\n{context}"
@@ -119,6 +128,7 @@ class ChatService:
         ]
         conversation.append({"role": "user", "content": request.content.strip()})
 
+        generation_started = time.perf_counter()
         output = await provider.generate(system, conversation)
         if mode == GenerationMode.ESSAY:
             word_count = len(output.text.split())
@@ -141,7 +151,10 @@ class ChatService:
                 target = 1_250
                 if abs(revised_count - target) < abs(word_count - target):
                     output = revised
+        generation_ms = round((time.perf_counter() - generation_started) * 1_000, 1)
         grounded = _ground_citations(output.text, citations)
+        cited_ids = {f"S{number}" for number in CITATION_RE.findall(grounded)}
+        citations = [citation for citation in citations if citation.id in cited_ids]
         artifact_view: ArtifactView | None = None
         artifact_id: str | None = None
         display_content = grounded
@@ -179,6 +192,18 @@ class ChatService:
             model=output.model,
             citations=[citation.model_dump() for citation in citations],
             artifact_id=artifact_id,
+        )
+        logger.info(
+            "chat_completed",
+            extra={
+                "session_id": session_id,
+                "mode": mode.value,
+                "provider": output.provider,
+                "model": output.model,
+                "retrieval_hits": len(hits),
+                "retrieval_ms": retrieval_ms,
+                "generation_ms": generation_ms,
+            },
         )
         return self._message_view(saved, artifact_view), mode.value
 

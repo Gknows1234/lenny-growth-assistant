@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from app.core.config import Settings
 from app.models.schemas import Citation, GenerationMode, MessageCreate
 from app.repositories.knowledge import SearchHit
-from app.services.chat import ChatService
+from app.services.chat import ChatService, _retrieval_query
 from app.services.providers import ProviderOutput
 
 
@@ -15,8 +15,8 @@ class FakeRepository:
     async def require_session(self, session_id: str, user_id: str) -> object:
         return object()
 
-    async def list_messages(self, session_id: str) -> list[object]:
-        return list(self.messages)
+    async def list_recent_messages(self, session_id: str, limit: int) -> list[object]:
+        return list(self.messages[-limit:]) if limit else []
 
     async def add_message(self, session_id: str, role: str, content: str, **kwargs) -> object:
         message = SimpleNamespace(
@@ -109,6 +109,15 @@ class ShortThenLongProvider(SuccessfulProvider):
         self.calls += 1
         words = 600 if self.calls == 1 else 1_200
         return ProviderOutput(f"Essay [S1] {'word ' * words}", self.name, self.model)
+
+
+def test_retrieval_query_uses_context_only_for_followups() -> None:
+    previous = ["How should we improve activation and retention?"]
+
+    assert _retrieval_query("Where do these guests disagree?", previous).endswith(previous[0])
+    assert _retrieval_query("How do pricing teams run research?", previous) == (
+        "How do pricing teams run research?"
+    )
 
 
 async def test_empty_retrieval_returns_grounded_refusal_without_model_call() -> None:

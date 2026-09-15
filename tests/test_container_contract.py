@@ -11,12 +11,19 @@ def test_container_entrypoint_runs_ingestion_as_module() -> None:
     assert "exec runuser -u app -- uvicorn" in entrypoint
 
 
-def test_docker_build_installs_the_application_package() -> None:
+def test_docker_build_caches_runtime_dependencies_before_source() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-    install_position = dockerfile.index('RUN pip install --upgrade pip && pip install ".[dev]"')
+    dependency_position = dockerfile.index("project['project']['dependencies']")
 
-    assert dockerfile.index("COPY app ./app") < install_position
-    assert dockerfile.index("COPY scripts ./scripts") < install_position
+    assert dockerfile.index("COPY pyproject.toml ./") < dependency_position
+    assert dependency_position < dockerfile.index("COPY app ./app")
+    assert dependency_position < dockerfile.index("COPY scripts ./scripts")
+    assert "FROM dependencies AS test" in dockerfile
+    assert "FROM dependencies AS runtime" in dockerfile
+    assert "project['project']['optional-dependencies']['dev']" in dockerfile
+    assert "COPY alembic ./alembic" in dockerfile
+    assert 'pip install ".[dev]"' not in dockerfile
+    assert "COPY . ." not in dockerfile
     assert "USER app" not in dockerfile
 
 

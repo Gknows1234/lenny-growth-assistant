@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.db.base import Artifact, ChatSession, Message
+from app.db.base import Artifact, ChatSession, Message, utcnow
 
 
 class ChatRepository:
@@ -41,6 +41,17 @@ class ChatRepository:
         )
         return list(result)
 
+    async def list_recent_messages(self, session_id: str, limit: int) -> list[Message]:
+        if limit <= 0:
+            return []
+        result = await self.db.scalars(
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.created_at.desc())
+            .limit(limit)
+        )
+        return list(reversed(list(result)))
+
     async def get_artifacts(self, artifact_ids: list[str]) -> dict[str, Artifact]:
         if not artifact_ids:
             return {}
@@ -71,8 +82,10 @@ class ChatRepository:
         )
         self.db.add(message)
         session = await self.db.get(ChatSession, session_id)
-        if session and not session.title and role == "user":
-            session.title = content.strip().replace("\n", " ")[:72]
+        if session:
+            session.updated_at = utcnow()
+            if not session.title and role == "user":
+                session.title = content.strip().replace("\n", " ")[:72]
         await self.db.commit()
         await self.db.refresh(message)
         return message

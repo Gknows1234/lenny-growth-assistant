@@ -38,7 +38,8 @@ Run these checks after `docker compose up --build` reports the API started.
 1. Stop Ollama and confirm the UI shows the local provider as unavailable; restart it and confirm readiness.
 2. Temporarily rename the configured model and confirm the status provides the correct `ollama pull` command.
 3. Ask a clearly out-of-domain question such as local weather. Confirm a supported refusal with no citations.
-4. Choose Claude without `ANTHROPIC_API_KEY`. Confirm it is marked Unavailable and sending returns a clear error.
+4. Without `ANTHROPIC_API_KEY`, confirm Claude is marked Unavailable and cannot be selected. An explicit API
+   request for it should return a structured error with a request ID.
 5. Stop PostgreSQL. Confirm `/health/live` stays `ok`, `/health/ready` becomes degraded, and the UI does not
    pretend that new state was saved.
 6. Restart services and confirm prior conversations remain.

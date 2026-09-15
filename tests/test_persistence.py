@@ -26,9 +26,11 @@ async def test_session_message_and_artifact_round_trip() -> None:
             artifact_id=artifact.id,
         )
         messages = await repository.list_messages(chat.id)
+        recent = await repository.list_recent_messages(chat.id, 1)
         artifacts = await repository.get_artifacts([artifact.id])
 
     assert chat.title == "How should we grow?"
     assert [item.role for item in messages] == ["user", "assistant"]
+    assert [item.role for item in recent] == ["assistant"]
     assert artifacts[artifact.id].source == "# Brief"
     await engine.dispose()

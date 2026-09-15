@@ -42,3 +42,7 @@ async def test_validation_errors_are_structured() -> None:
         response = await client.post("/api/sessions/abc/messages", json={"content": ""})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_error"
+    assert response.json()["error"]["details"]["trace_id"]
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["server-timing"].startswith("app;dur=")

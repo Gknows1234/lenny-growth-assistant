@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Grounded product and growth guidance from Lenny's Podcast transcripts." />
+    <meta name="theme-color" content="#10251e" />
     <title>The Lenny Growth Assistant</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
@@ -62,29 +63,34 @@
           <section class="chat-panel" aria-label="Conversation">
             <div class="message-scroll" id="message-scroll">
               <div class="welcome" id="welcome">
-                <div class="eyebrow"><span></span> Grounded in Lenny’s Podcast</div>
-                <h1>What are you trying<br />to grow?</h1>
-                <p>Ask a product question, pressure-test a strategy, or turn sourced insights into something your team can use.</p>
+                <div class="eyebrow"><span></span> Evidence workspace</div>
+                <h1>Make the next product decision with receipts.</h1>
+                <p>Search the lessons behind Lenny’s Podcast, compare how experienced operators think, and turn the evidence into work your team can use.</p>
+                <div class="proof-strip" aria-label="Product capabilities">
+                  <span><strong id="welcome-source-count">—</strong> episodes indexed</span>
+                  <span><strong>Local</strong> Ollama inference</span>
+                  <span><strong>Linked</strong> source passages</span>
+                </div>
                 <div class="prompt-grid" aria-label="Suggested questions">
                   <button class="prompt-card" type="button" data-prompt="How should an early-stage team find and validate product-market fit?">
-                    <span class="prompt-number">01</span>
+                    <span class="prompt-type">Strategy</span>
                     <strong>Find product-market fit</strong>
-                    <small>Synthesize the strongest transcript advice</small>
+                    <small>Turn competing operator advice into a testable plan</small>
                   </button>
                   <button class="prompt-card" type="button" data-prompt="What are the most useful ways to improve activation and retention?">
-                    <span class="prompt-number">02</span>
+                    <span class="prompt-type">Growth</span>
                     <strong>Improve activation</strong>
-                    <small>Compare practical growth frameworks</small>
+                    <small>Compare practical frameworks and trade-offs</small>
                   </button>
                   <button class="prompt-card" type="button" data-prompt="Write a Ship 30 for 30 essay about building a strong product culture.">
-                    <span class="prompt-number">03</span>
-                    <strong>Draft an essay</strong>
-                    <small>Shape cited insights into a narrative</small>
+                    <span class="prompt-type">Writing</span>
+                    <strong>Draft a Ship 30 essay</strong>
+                    <small>Shape sourced insights into a 1,250-word narrative</small>
                   </button>
                   <button class="prompt-card" type="button" data-prompt="Create an HTML briefing card for a leadership team on running better product reviews.">
-                    <span class="prompt-number">04</span>
+                    <span class="prompt-type">Artifact</span>
                     <strong>Create a briefing</strong>
-                    <small>Render a secure, shareable artifact</small>
+                    <small>Render a secure HTML decision brief in-app</small>
                   </button>
                 </div>
               </div>
@@ -113,7 +119,7 @@
                   </button>
                 </div>
               </form>
-              <p class="grounding-note">Answers stay within retrieved transcripts. Check cited passages before making decisions.</p>
+              <p class="grounding-note"><span aria-hidden="true">●</span> Grounded only in retrieved transcripts. Open the cited passages before making a decision.</p>
             </div>
           </section>
 

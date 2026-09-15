@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.db.session import database_ready, get_db
+from app.db.session import get_db
 from app.models.schemas import (
     AppConfig,
     ArtifactView,
@@ -21,7 +21,7 @@ from app.models.schemas import (
 from app.repositories.chat import ChatRepository
 from app.repositories.knowledge import KnowledgeRepository
 from app.services.chat import ChatService
-from app.services.providers import ProviderRegistry
+from app.services.providers import ProviderRegistry, get_provider_registry
 from app.services.retrieval import Retriever
 
 router = APIRouter()
@@ -42,19 +42,22 @@ async def live() -> HealthResponse:
 
 @router.get("/health/ready", response_model=HealthResponse, tags=["health"])
 async def ready(
-    db: AsyncSession = Depends(get_db), settings: Settings = Depends(get_settings)
+    db: AsyncSession = Depends(get_db),
+    registry: ProviderRegistry = Depends(get_provider_registry),
 ) -> HealthResponse:
-    db_ok = await database_ready()
-    registry = ProviderRegistry(settings)
     provider = registry.get()
-    provider_ok, provider_reason = await provider.available()
-    counts = {"sources": 0, "chunks": 0}
-    if db_ok:
-        knowledge = KnowledgeRepository(db)
-        counts = {
-            "sources": await knowledge.count_sources(),
-            "chunks": await knowledge.count_chunks(),
-        }
+    knowledge = KnowledgeRepository(db)
+    provider_result, count_result = await asyncio.gather(
+        registry.available(provider), knowledge.counts(), return_exceptions=True
+    )
+    provider_ok, provider_reason = (
+        provider_result
+        if not isinstance(provider_result, BaseException)
+        else (False, "Provider health check failed")
+    )
+    db_ok = not isinstance(count_result, BaseException)
+    sources, chunks = count_result if db_ok else (0, 0)
+    counts = {"sources": sources, "chunks": chunks}
     checks = {
         "database": {"ok": db_ok},
         "provider": {
@@ -71,11 +74,14 @@ async def ready(
 
 @router.get("/api/config", response_model=AppConfig, tags=["configuration"])
 async def config(
-    db: AsyncSession = Depends(get_db), settings: Settings = Depends(get_settings)
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    registry: ProviderRegistry = Depends(get_provider_registry),
 ) -> AppConfig:
-    registry = ProviderRegistry(settings)
-    availability = await asyncio.gather(
-        *(provider.available() for provider in registry.providers.values())
+    knowledge = KnowledgeRepository(db)
+    *availability, counts = await asyncio.gather(
+        *(registry.available(provider) for provider in registry.providers.values()),
+        knowledge.counts(),
     )
     providers = [
         ProviderConfig(
@@ -86,7 +92,7 @@ async def config(
         )
         for provider, result in zip(registry.providers.values(), availability, strict=True)
     ]
-    knowledge = KnowledgeRepository(db)
+    sources, chunks = counts
     return AppConfig(
         active_provider=settings.llm_provider,
         providers=providers,
@@ -95,8 +101,8 @@ async def config(
             "result_limit": settings.retrieval_limit,
         },
         knowledge_base={
-            "sources": await knowledge.count_sources(),
-            "chunks": await knowledge.count_chunks(),
+            "sources": sources,
+            "chunks": chunks,
         },
     )
 
@@ -167,13 +173,14 @@ async def create_message(
     user_id: str = Depends(current_user),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    registry: ProviderRegistry = Depends(get_provider_registry),
 ) -> ChatResponse:
     repository = ChatRepository(db)
     knowledge = KnowledgeRepository(db)
     service = ChatService(
         repository,
         Retriever(knowledge, settings),
-        ProviderRegistry(settings),
+        registry,
         settings,
     )
     message, _ = await service.respond(session_id, user_id, payload)

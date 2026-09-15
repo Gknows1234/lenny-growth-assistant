@@ -1,5 +1,5 @@
 from app.core.config import Settings
-from app.repositories.knowledge import SearchHit, search_terms
+from app.repositories.knowledge import SearchHit, postgres_search_queries, search_terms
 from app.services.retrieval import Retriever
 
 
@@ -38,3 +38,15 @@ def test_search_terms_remove_filler_and_preserve_product_language() -> None:
     assert search_terms(
         "How should an early-stage team find and validate product-market fit?"
     ) == ["early", "stage", "team", "find", "validate", "product", "market", "fit"]
+    assert search_terms("What did guests say about AI and UX?") == ["ai", "ux"]
+
+
+def test_postgres_search_relaxes_only_the_high_signal_tail() -> None:
+    assert postgres_search_queries(
+        ["early", "stage", "team", "find", "validate", "product", "market", "fit"]
+    ) == [
+        "validate & product & market & fit",
+        "product & market & fit",
+        "market & fit",
+        "fit",
+    ]

@@ -172,12 +172,13 @@ Validation and operational errors use:
   "error": {
     "code": "provider_unavailable",
     "message": "OpenAI could not complete the request.",
-    "details": {"provider": "openai", "model": "gpt-5-mini"}
+    "details": {"provider": "openai", "model": "gpt-4o-mini", "trace_id": "…"}
   }
 }
 ```
 
-Every response also carries `X-Request-Id`; model, path, status, and duration appear in structured JSON
+Every response also carries `X-Request-Id` and `Server-Timing`; model, retrieval/generation timing, path,
+status, and duration appear in structured JSON
 logs without transcript contents, prompts, API keys, or generated content.
 
 ## Artifact security
@@ -214,11 +215,11 @@ The suite covers deterministic routing, empty-retrieval refusal, citation/deep-l
 retrieval diversity, persistence round trips, HTTP contracts, and artifact XSS/CSS isolation. The manual
 browser plan is in [docs/manual-test-plan.md](docs/manual-test-plan.md).
 
-Validation completed in the authoring workspace: `ruff check .` passed; the automated tests passed; PostgreSQL migration
-SQL generated through revision `0001`; the Compose YAML and Python entry points parsed; and a SQLite-backed
-runtime indexed 303 episodes into 21,456 chunks. HTTP smoke checks confirmed the UI, liveness, configuration,
-session creation, persistence, and citation-bearing OpenAI inference. The clean-clone Docker/PostgreSQL and
-native Ollama gates must also pass before submission.
+Validation completed in the authoring workspace: lint and automated tests pass; migrations apply through
+revision `0002`; and a clean Docker/PostgreSQL run indexed 303 episodes into 21,456 chunks. The native Ollama
+journey passes grounded answers, contextual follow-ups, a 1,100–1,400 word essay, sanitized Markdown/HTML
+artifacts, cited source links, current-information refusal, and restart persistence. Responsive browser checks
+cover 360 px mobile and desktop layouts.
 
 ## Operational commands
 

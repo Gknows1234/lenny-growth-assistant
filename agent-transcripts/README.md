@@ -181,3 +181,60 @@ server-side API key. GitHub Actions and the documented Docker/manual gate remain
 - A new public GitHub clone at `47c81fb` built successfully with Docker Compose and brand-new volumes.
 - That clone migrated and indexed **303 sources / 21,456 chunks**, passed the full Ollama acceptance journey,
   persisted 12 messages, restarted healthy, and logged `ingestion_skipped_existing_index` on its second boot.
+
+---
+
+## Session 2026-09-15 — measured production optimization
+
+### Problems measured
+
+- A representative PostgreSQL full-text query matched 12,026 of 21,456 chunks, fell back to a sequential
+  scan, and spent about **1,691 ms** ranking candidates.
+- A normal Ollama answer was only 39 words despite eight retrieved passages.
+- The production image was about **777 MB** and included pytest, coverage, Ruff, SQLite test support, and
+  HTTP mocks.
+- Application source invalidated the dependency layer, causing roughly minute-long reinstalls during rebuilds.
+- The browser fetched the entire session again after every generated answer and rebound handlers across all
+  rendered messages.
+
+### Corrections
+
+- Retrieval now starts with an indexed AND query over the four highest-signal trailing terms and relaxes one
+  term at a time. PostgreSQL limits each source to two candidates before the service diversity pass.
+- Anaphoric follow-ups reuse only the latest user question; independent questions no longer inherit stale
+  retrieval terms. Two-letter product acronyms such as AI, PM, UI, and UX are retained.
+- Recent model history is bounded in SQL, knowledge counts share one query, ordered chat paths have composite
+  indexes, provider health has a short cache, and message generation no longer repeats a model availability
+  request.
+- Prompts request a direct 250–500 word synthesis, disagreement, and next action. The API returns only sources
+  actually cited by the model.
+- Production and test Docker stages are separated. Runtime dependencies are cached before source, and only
+  runtime packages enter the production image. Make targets use the dedicated test stage.
+- The browser updates the completed response without a redundant session fetch, uses delegated event handlers,
+  blocks navigation while generation is active, disables unavailable providers, and exposes honest retrieval/
+  synthesis loading phases.
+- The first screen was rewritten as an evidence workspace with concrete trust signals and task-oriented
+  starters. Security/cache/request-timing headers and trace IDs were added to support diagnosis.
+
+### Failures found while optimizing
+
+- The first narrowed Docker copy referenced `migrations/`; the repository directory is `alembic/`. The build
+  failed at checksum calculation and the exact path was corrected.
+- Installing the local package without build isolation failed because the slim base omitted setuptools. The
+  local install was unnecessary at runtime, so it was removed rather than adding build tools to production.
+- The first dedicated test image could lint but pytest could not import `app` because the console entry point
+  did not add the workspace to `sys.path`. The test and runtime stages now set `PYTHONPATH=/workspace`.
+- Container contract tests initially failed because the deliberately narrowed test stage omitted the
+  Dockerfile and `.dockerignore` fixtures. Those two small files are now copied only into the test stage.
+
+### Results
+
+- Representative retrieval fell to **135 ms** on the first optimized run and **62 ms** for the contextual
+  follow-up—roughly a 92–96% reduction from the baseline.
+- The PMF response produced **286 words**, four inline markers, and only its two genuinely cited sources. The
+  contextual disagreement follow-up produced 179 words with valid citations in 2.96 seconds end-to-end.
+- The production image fell to about **717 MB**. A no-change Docker rebuild completed in **2.79 seconds**;
+  later source-only image assembly completed without reinstalling dependencies.
+- Desktop visual inspection and the automated 360×800 UI checks passed without overflow or interaction
+  regressions.
+- Local and dedicated-container lint passed; the dedicated Docker suite passed with **37 tests**.

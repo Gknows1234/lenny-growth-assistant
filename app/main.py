@@ -58,7 +58,7 @@ async def database_error(request: Request, _: SQLAlchemyError) -> JSONResponse:
             "error": {
                 "code": "database_unavailable",
                 "message": "Conversation storage is unavailable. No new state was saved.",
-                "details": {},
+                "details": {"trace_id": request.state.trace_id},
             }
         },
     )
@@ -73,21 +73,24 @@ async def unexpected_error(request: Request, _: Exception) -> JSONResponse:
             "error": {
                 "code": "internal_error",
                 "message": "The request could not be completed.",
-                "details": {},
+                "details": {"trace_id": request.state.trace_id},
             }
         },
     )
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         status_code=422,
         content={
             "error": {
                 "code": "validation_error",
                 "message": "The request was invalid.",
-                "details": {"fields": jsonable_encoder(exc.errors())},
+                "details": {
+                    "fields": jsonable_encoder(exc.errors()),
+                    "trace_id": request.state.trace_id,
+                },
             }
         },
     )
@@ -105,6 +108,15 @@ async def request_context(request: Request, call_next):
         raise
     duration_ms = round((time.perf_counter() - started) * 1000, 1)
     response.headers["X-Request-Id"] = trace_id
+    response.headers["Server-Timing"] = f"app;dur={duration_ms}"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["X-Frame-Options"] = "DENY"
+    if request.url.path.startswith("/api/") or request.url.path.startswith("/health/"):
+        response.headers["Cache-Control"] = "no-store"
+    elif request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=300"
     logger.info(
         "request_completed",
         extra={

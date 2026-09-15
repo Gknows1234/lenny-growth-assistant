@@ -54,15 +54,15 @@ Application
 ## Key interaction states
 
 - **First use:** focused question framing plus four realistic prompts; composer remains the primary action.
-- **Loading:** user message appears immediately; a labeled three-dot assistant indicator communicates model
-  work without inventing token streaming.
+- **Loading:** user message appears immediately; the status moves from finding transcript evidence to local
+  model synthesis without pretending that non-streamed output is token streaming.
 - **Grounded success:** concise formatted response, visible model badge, inline markers, collapsed evidence.
 - **Unsupported:** direct “not enough transcript evidence” language and query-reframing suggestion.
 - **Dependency error:** short toast with the server's safe recovery message; the user's message remains in the
   persisted chat so retry context is not lost.
 - **Artifact success:** desktop becomes a balanced split view; preview is default and source is one tab away.
-- **Provider unavailable:** provider card remains selectable for diagnosis, but clearly shows unavailable and
-  the request fails rather than changing execution silently.
+- **Provider unavailable:** provider card remains visible for diagnosis but is disabled. The app never routes
+  a request to it or changes providers silently.
 - **Empty history/index:** purposeful copy and zero-count readiness, never fabricated content.
 
 ## Responsive behavior
@@ -91,7 +91,8 @@ actions remain reachable without horizontal scrolling.
 
 ## Content design
 
-Labels describe outcomes: “Ship 30 essay,” “Markdown artifact,” “Open transcript passages.” Error messages
+Labels describe outcomes: “Ship 30 essay,” “Markdown artifact,” “Open transcript passages.” The first screen
+states the evidence boundary and exposes three concrete trust signals instead of a generic chatbot greeting. Error messages
 name the unavailable component and offer one recovery path. The interface does not explain itself with
 taglines or evaluator language. Starter questions represent common jobs and set an appropriate level of
 specificity.

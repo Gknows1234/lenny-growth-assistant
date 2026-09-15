@@ -21,6 +21,21 @@ async def test_ollama_availability_checks_installed_model() -> None:
 
 
 @respx.mock
+async def test_registry_caches_short_lived_provider_health_checks() -> None:
+    route = respx.get("http://ollama.test/api/tags").mock(
+        return_value=httpx.Response(200, json={"models": [{"name": "qwen3:4b-instruct"}]})
+    )
+    registry = ProviderRegistry(
+        Settings(ollama_base_url="http://ollama.test", ollama_model="qwen3:4b-instruct")
+    )
+
+    await registry.available(registry.get())
+    await registry.available(registry.get())
+
+    assert route.call_count == 1
+
+
+@respx.mock
 async def test_ollama_chat_is_local_and_non_streaming() -> None:
     route = respx.post("http://ollama.test/api/chat").mock(
         return_value=httpx.Response(

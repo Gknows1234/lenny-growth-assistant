@@ -118,13 +118,16 @@ oracle. `X-Request-Id` is accepted/returned for correlation, capped to 100 chara
    first `HH:MM:SS`/`MM:SS` timestamp.
 5. Hash full source. Skip unchanged sources; replace chunks only for changed sources.
 6. PostgreSQL derives `tsvector` values and maintains its GIN index.
-7. At request time, `websearch_to_tsquery` returns 30 ranked candidates. Source diversity limits each episode
-   to two selected chunks and returns 8.
+7. At request time, normalized terms form an indexed AND query over the four highest-signal trailing terms.
+   If that is too narrow, retrieval drops one term at a time instead of ranking a corpus-wide OR match.
+   PostgreSQL caps each episode at two candidates before returning the ranked pool; the service keeps that
+   diversity invariant and selects up to 8 passages.
 8. Context is truncated at a configured character boundary without splitting a passage. Each passage receives
    a fixed marker included in both prompt and response citation metadata.
 
-Follow-ups prepend the previous two user turns to the retrieval query and include up to ten recent messages in
-the model conversation. Conversation text resolves intent; only retrieved passages are evidence.
+Only anaphoric follow-ups add the latest user question to the retrieval query; independent questions do not
+inherit stale search terms. Up to ten recent messages are selected in SQL and bounded again by total characters
+for the model conversation. Conversation text resolves intent; only retrieved passages are evidence.
 
 ## Agent routing and skills
 
@@ -132,13 +135,13 @@ Explicit UI mode always wins. In Auto, bounded regular expressions route recogni
 requests; everything else is an Answer. Deterministic routing is cheaper, testable, and avoids using an LLM
 before evidence retrieval.
 
-- **Answer:** concise synthesis under the grounding contract.
+- **Answer:** a direct 250–500 word synthesis with evidence, meaningful disagreement, and a next step.
 - **Ship 30:** a checked-in skill encoding reader promise, hook, 4A-informed angle, one parallel organizing
   pattern, narrative progression, skimmability, 1,100–1,400 word range, cited claims, and final action.
 - **Markdown/HTML:** static source-only generation with citations and explicit feature prohibitions.
 
 The default Ollama adapter uses the native `/api/chat` endpoint with non-streaming bounded generation and a
-model-presence health check. The OpenAI adapter uses the Responses API with response storage disabled. The
+short-lived cached model-presence health check. The OpenAI adapter uses the Responses API with response storage disabled. The
 Claude adapter uses the official Agent SDK one-shot `query()` path with `max_turns=1`, no tools, and `dontAsk`
 permission mode. All implement the same provider protocol and never silently fall back.
 
