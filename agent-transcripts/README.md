@@ -134,3 +134,44 @@ server-side API key. GitHub Actions and the documented Docker/manual gate remain
 - Run the full Docker clean-clone gate on a machine with Docker Desktop installed.
 - Submit via <https://forms.gle/LgotDHNVxW1mbzNE7>.
 
+---
+
+## Session 2026-09-15 — Docker, PostgreSQL, Ollama, and UI acceptance
+
+### Environment completed
+
+- Installed Docker Desktop 4.91.0 and verified Docker Engine 29.8.0 on WSL2.
+- Installed Ollama 0.34.0, pulled `qwen3:4b-instruct` (2.5 GB), and verified direct local inference.
+- Started the application with isolated Docker Compose PostgreSQL and transcript volumes.
+
+### Clean-run defects found and corrected
+
+- The container entrypoint could not import `app` when invoking the ingestion file directly. The image now
+  installs the package after copying application sources, and the entrypoint uses module invocation.
+- Replacing the transcript directory attempted to delete the mounted volume root. Refresh now clears its
+  contents while preserving the mount point.
+- A fresh Docker volume was root-owned. The entrypoint now prepares and narrowly changes ownership of the data
+  directories, then runs migrations, ingestion, and Uvicorn as the unprivileged `app` user.
+- PostgreSQL enforced transcript-source foreign keys before chunk inserts because the new source had not been
+  flushed. Ingestion now flushes the source first and preserves the run ID across rollback handling.
+- Natural-language PostgreSQL searches used an implicit all-terms query and missed relevant evidence. Retrieval
+  now extracts meaningful, deduplicated terms and combines them with OR semantics; SQLite uses the same terms.
+- `.runtime` and tool caches were added to `.dockerignore`, reducing the build context from roughly 609 MB to
+  under 1 MB.
+
+### Executed acceptance results
+
+- Fresh database migration and automatic ingestion completed: **303 sources, 21,456 chunks, 1 completed run**.
+- `/health/ready`: application, PostgreSQL, Ollama model, and knowledge base all ready.
+- Ollama product journey passed: cited PMF answer, disagreement follow-up, **1,140-word** Ship 30 essay, Markdown
+  artifact, sanitized hostile HTML artifact, supported current-weather refusal, and persisted chat history.
+- Generated answers and artifacts contained eight linked transcript citations with valid inline source markers.
+- The hostile artifact contained no script, form, iframe, JavaScript URL, or CSS import after sanitization.
+- Mobile UI acceptance at 360×800 passed with no overflow, responsive drawer, settings dialog, keyboard-ready
+  composer, correct empty artifact state, reduced-motion behavior, and all three provider cards.
+- `ruff check .` passed and the complete test suite passed with **34 tests**.
+
+### Remaining submission work
+
+- Run one final clean clone from the newly pushed release commit and confirm GitHub Actions.
+- Record the required 2–3 minute on-camera demo, add its public YouTube URL to the README, and submit the form.

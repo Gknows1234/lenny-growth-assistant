@@ -1,5 +1,5 @@
 from app.core.config import Settings
-from app.repositories.knowledge import SearchHit
+from app.repositories.knowledge import SearchHit, search_terms
 from app.services.retrieval import Retriever
 
 
@@ -32,3 +32,9 @@ def test_citations_include_deep_link() -> None:
 def test_citations_reject_untrusted_source_url() -> None:
     hit = SearchHit("c1", "s1", "Episode", "Guest", "Excerpt", "javascript:alert(1)", 90, 1.0)
     assert Retriever.citations([hit])[0].url is None
+
+
+def test_search_terms_remove_filler_and_preserve_product_language() -> None:
+    assert search_terms(
+        "How should an early-stage team find and validate product-market fit?"
+    ) == ["early", "stage", "team", "find", "validate", "product", "market", "fit"]

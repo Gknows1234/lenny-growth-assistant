@@ -33,6 +33,14 @@ SEARCH_STOPWORDS = {
 }
 
 
+def search_terms(query: str) -> list[str]:
+    return [
+        term
+        for term in dict.fromkeys(re.findall(r"[a-z0-9]{3,}", query.lower()))
+        if term not in SEARCH_STOPWORDS
+    ][:10]
+
+
 @dataclass(slots=True)
 class SearchHit:
     chunk_id: str
@@ -56,9 +64,13 @@ class KnowledgeRepository:
         return int(await self.db.scalar(select(func.count()).select_from(TranscriptChunk)) or 0)
 
     async def search(self, query: str, limit: int) -> list[SearchHit]:
+        terms = search_terms(query)
+        if not terms:
+            return []
         bind = self.db.get_bind()
         if bind is not None and bind.dialect.name == "sqlite":
-            return await self._search_sqlite(query, limit)
+            return await self._search_sqlite(terms, limit)
+        websearch_query = " OR ".join(terms)
         statement = text(
             """
             SELECT c.id AS chunk_id, c.source_id, s.title, s.guest, c.content,
@@ -71,7 +83,12 @@ class KnowledgeRepository:
             LIMIT :limit
             """
         )
-        rows = (await self.db.execute(statement, {"query": query, "limit": limit})).mappings()
+        rows = (
+            await self.db.execute(
+                statement,
+                {"query": websearch_query, "limit": limit},
+            )
+        ).mappings()
         return [
             SearchHit(
                 chunk_id=row["chunk_id"],
@@ -86,14 +103,7 @@ class KnowledgeRepository:
             for row in rows
         ]
 
-    async def _search_sqlite(self, query: str, limit: int) -> list[SearchHit]:
-        terms = [
-            term
-            for term in dict.fromkeys(re.findall(r"[a-z0-9]{3,}", query.lower()))
-            if term not in SEARCH_STOPWORDS
-        ][:10]
-        if not terms:
-            return []
+    async def _search_sqlite(self, terms: list[str], limit: int) -> list[SearchHit]:
         statement = (
             select(TranscriptChunk, TranscriptSource)
             .join(TranscriptSource, TranscriptSource.id == TranscriptChunk.source_id)
