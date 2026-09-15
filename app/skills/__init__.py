@@ -1,0 +1,1 @@
+"""Bounded, reusable generation skills."""

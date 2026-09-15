@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Grounded product and growth guidance from Lenny's Podcast transcripts." />
+    <title>The Lenny Growth Assistant</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Chat history">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">L</div>
+          <div>
+            <div class="brand-name">Lenny Assistant</div>
+            <div class="brand-kicker">Product &amp; growth desk</div>
+          </div>
+          <button class="icon-button sidebar-close" id="sidebar-close" type="button" aria-label="Close chat history">×</button>
+        </div>
+
+        <button class="new-chat" id="new-chat" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          New conversation
+        </button>
+
+        <div class="history-label">Recent conversations</div>
+        <nav class="history" id="history"></nav>
+        <div class="sidebar-empty" id="history-empty">Your grounded conversations will appear here.</div>
+
+        <div class="sidebar-footer">
+          <button class="settings-button" id="settings-open" type="button" aria-haspopup="dialog">
+            <span class="status-orb" id="sidebar-orb"></span>
+            <span>
+              <strong id="sidebar-provider">Local model</strong>
+              <small id="sidebar-model">Checking model…</small>
+            </span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <button class="icon-button menu-button" id="menu-open" type="button" aria-label="Open chat history" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div class="conversation-title" id="conversation-title">New conversation</div>
+          <div class="topbar-actions">
+            <button class="knowledge-pill" id="knowledge-pill" type="button" title="Knowledge base and model status" aria-haspopup="dialog">
+              <span class="status-orb"></span>
+              <span id="knowledge-count">Loading library</span>
+            </button>
+            <button class="icon-button artifact-toggle" id="artifact-toggle" type="button" aria-label="Open artifact viewer" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM13 5v14" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="content-grid" id="content-grid">
+          <section class="chat-panel" aria-label="Conversation">
+            <div class="message-scroll" id="message-scroll">
+              <div class="welcome" id="welcome">
+                <div class="eyebrow"><span></span> Grounded in Lenny’s Podcast</div>
+                <h1>What are you trying<br />to grow?</h1>
+                <p>Ask a product question, pressure-test a strategy, or turn sourced insights into something your team can use.</p>
+                <div class="prompt-grid" aria-label="Suggested questions">
+                  <button class="prompt-card" type="button" data-prompt="How should an early-stage team find and validate product-market fit?">
+                    <span class="prompt-number">01</span>
+                    <strong>Find product-market fit</strong>
+                    <small>Synthesize the strongest transcript advice</small>
+                  </button>
+                  <button class="prompt-card" type="button" data-prompt="What are the most useful ways to improve activation and retention?">
+                    <span class="prompt-number">02</span>
+                    <strong>Improve activation</strong>
+                    <small>Compare practical growth frameworks</small>
+                  </button>
+                  <button class="prompt-card" type="button" data-prompt="Write a Ship 30 for 30 essay about building a strong product culture.">
+                    <span class="prompt-number">03</span>
+                    <strong>Draft an essay</strong>
+                    <small>Shape cited insights into a narrative</small>
+                  </button>
+                  <button class="prompt-card" type="button" data-prompt="Create an HTML briefing card for a leadership team on running better product reviews.">
+                    <span class="prompt-number">04</span>
+                    <strong>Create a briefing</strong>
+                    <small>Render a secure, shareable artifact</small>
+                  </button>
+                </div>
+              </div>
+              <div class="messages" id="messages" aria-live="polite"></div>
+            </div>
+
+            <div class="composer-wrap">
+              <form class="composer" id="composer">
+                <label class="sr-only" for="message-input">Ask about product or growth</label>
+                <textarea id="message-input" rows="1" maxlength="10000" placeholder="Ask the transcript library…" autocomplete="off"></textarea>
+                <div class="composer-toolbar">
+                  <label class="mode-control">
+                    <span class="sr-only">Response type</span>
+                    <select id="mode-select">
+                      <option value="auto">Auto</option>
+                      <option value="answer">Answer</option>
+                      <option value="essay">Ship 30 essay</option>
+                      <option value="markdown">Markdown artifact</option>
+                      <option value="html">HTML artifact</option>
+                    </select>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
+                  </label>
+                  <div class="composer-hint" aria-hidden="true"><kbd id="modifier-key">Ctrl</kbd><kbd>Enter</kbd></div>
+                  <button class="send-button" id="send-button" type="submit" aria-label="Send message" disabled>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>
+                  </button>
+                </div>
+              </form>
+              <p class="grounding-note">Answers stay within retrieved transcripts. Check cited passages before making decisions.</p>
+            </div>
+          </section>
+
+          <aside class="artifact-panel" id="artifact-panel" aria-label="Artifact viewer" hidden>
+            <header class="artifact-header">
+              <div>
+                <span class="artifact-kicker">Artifact</span>
+                <h2 id="artifact-title">Untitled artifact</h2>
+              </div>
+              <button class="icon-button" id="artifact-close" type="button" aria-label="Close artifact viewer">×</button>
+            </header>
+            <div class="artifact-tools">
+              <div class="artifact-tabs" role="tablist" aria-label="Artifact view">
+                <button class="artifact-tab active" id="preview-tab" type="button" role="tab" aria-selected="true">Preview</button>
+                <button class="artifact-tab" id="source-tab" type="button" role="tab" aria-selected="false">Source</button>
+              </div>
+              <div class="artifact-actions">
+                <button class="text-button" id="copy-artifact" type="button">Copy</button>
+                <button class="text-button" id="download-artifact" type="button">Download</button>
+              </div>
+            </div>
+            <div class="artifact-stage" id="artifact-stage">
+              <iframe id="artifact-frame" title="Rendered artifact" sandbox="" referrerpolicy="no-referrer"></iframe>
+              <pre id="artifact-source" hidden><code></code></pre>
+            </div>
+            <footer class="artifact-security">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.8 8.4 7 10 4.2-1.6 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg>
+              Sanitized · scripts, forms, storage and network access blocked
+            </footer>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <dialog class="settings-dialog" id="settings-dialog">
+      <form method="dialog">
+        <div class="dialog-head">
+          <div>
+            <span class="eyebrow"><span></span> Model routing</span>
+            <h2>Model status</h2>
+            <p>See which configured model will answer new messages. API credentials remain on the server.</p>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Close settings">×</button>
+        </div>
+        <div class="provider-options" id="provider-options"></div>
+        <div class="dialog-note">If the configured model is unavailable, the app shows the error instead of silently changing providers.</div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div class="mobile-scrim" id="mobile-scrim"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

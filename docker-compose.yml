@@ -1,0 +1,61 @@
+name: lenny-growth-assistant
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lenny
+      POSTGRES_PASSWORD: lenny
+      POSTGRES_DB: lenny
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lenny -d lenny"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  api:
+    build: .
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://lenny:lenny@db:5432/lenny}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b-instruct}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-180}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-180}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+      CLAUDE_TIMEOUT_SECONDS: ${CLAUDE_TIMEOUT_SECONDS:-180}
+      RETRIEVAL_LIMIT: ${RETRIEVAL_LIMIT:-8}
+      RETRIEVAL_CANDIDATES: ${RETRIEVAL_CANDIDATES:-30}
+      MAX_CONTEXT_CHARS: ${MAX_CONTEXT_CHARS:-24000}
+      MAX_HISTORY_MESSAGES: ${MAX_HISTORY_MESSAGES:-10}
+      MAX_HISTORY_CHARS: ${MAX_HISTORY_CHARS:-12000}
+      TRANSCRIPT_REPO: ${TRANSCRIPT_REPO:-https://github.com/ChatPRD/lennys-podcast-transcripts.git}
+      TRANSCRIPT_REF: ${TRANSCRIPT_REF:-main}
+      INGEST_LIMIT: ${INGEST_LIMIT:-0}
+      AUTO_INGEST: ${AUTO_INGEST:-true}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8000}
+      SESSION_USER_HEADER: ${SESSION_USER_HEADER:-X-User-Id}
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - transcript_data:/workspace/data/transcripts
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  transcript_data:

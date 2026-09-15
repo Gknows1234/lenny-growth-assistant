@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lenny-growth-assistant"
+version = "1.0.0"
+description = "A grounded product and growth assistant over Lenny's Podcast transcripts"
+requires-python = ">=3.11"
+dependencies = [
+  "alembic==1.14.1",
+  "asyncpg==0.30.0",
+  "bleach[css]==6.2.0",
+  "claude-agent-sdk==0.2.128",
+  "fastapi==0.115.8",
+  "httpx==0.28.1",
+  "mistune==3.1.1",
+  "pydantic-settings==2.7.1",
+  "python-frontmatter==1.1.0",
+  "python-json-logger==3.2.1",
+  "SQLAlchemy[asyncio]==2.0.38",
+  "tinycss2==1.4.0",
+  "uvicorn[standard]==0.34.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "aiosqlite==0.21.0",
+  "pytest==8.3.4",
+  "pytest-asyncio==0.25.3",
+  "pytest-cov==6.0.0",
+  "respx==0.22.0",
+  "ruff==0.9.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["static/*", "skills/*.md"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [".git", ".tools", ".venv", "data/transcripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008", "E501"]
