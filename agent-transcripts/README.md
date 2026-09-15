@@ -173,5 +173,11 @@ server-side API key. GitHub Actions and the documented Docker/manual gate remain
 
 ### Remaining submission work
 
-- Run one final clean clone from the newly pushed release commit and confirm GitHub Actions.
 - Record the required 2–3 minute on-camera demo, add its public YouTube URL to the README, and submit the form.
+
+### Release proof
+
+- GitHub Actions passed for release commit `47c81fb`.
+- A new public GitHub clone at `47c81fb` built successfully with Docker Compose and brand-new volumes.
+- That clone migrated and indexed **303 sources / 21,456 chunks**, passed the full Ollama acceptance journey,
+  persisted 12 messages, restarted healthy, and logged `ingestion_skipped_existing_index` on its second boot.
