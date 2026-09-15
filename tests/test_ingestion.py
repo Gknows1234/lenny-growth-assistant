@@ -1,6 +1,15 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import pytest
 
-from scripts.ingest import archive_url, chunk_transcript, stable_source_id, timestamp_seconds
+from scripts.ingest import (
+    archive_url,
+    chunk_transcript,
+    replace_directory_contents,
+    stable_source_id,
+    timestamp_seconds,
+)
 
 
 def test_timestamp_parses_minute_and_hour_forms() -> None:
@@ -36,3 +45,23 @@ def test_long_source_ids_are_stable_and_fit_schema() -> None:
     slug = "a-very-long-combined-guest-name-" * 4
     assert stable_source_id(slug) == stable_source_id(slug)
     assert len(stable_source_id(slug)) == 64
+
+
+def test_replace_directory_contents_preserves_mountpoint() -> None:
+    with TemporaryDirectory(dir=Path.cwd()) as temporary:
+        root = Path(temporary)
+        source = root / "source"
+        destination = root / "mounted-destination"
+        source.mkdir()
+        destination.mkdir()
+        (source / "episodes").mkdir()
+        (source / "episodes" / "new.md").write_text("new", encoding="utf-8")
+        (destination / "old.txt").write_text("old", encoding="utf-8")
+        original_destination = destination.resolve()
+
+        replace_directory_contents(source, destination)
+
+        assert destination.resolve() == original_destination
+        assert destination.is_dir()
+        assert not (destination / "old.txt").exists()
+        assert (destination / "episodes" / "new.md").read_text(encoding="utf-8") == "new"

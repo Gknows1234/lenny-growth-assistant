@@ -62,6 +62,17 @@ def safe_extract(archive: tarfile.TarFile, destination: Path) -> None:
     archive.extractall(destination, filter="data")
 
 
+def replace_directory_contents(source: Path, destination: Path) -> None:
+    """Replace a checkout without deleting its directory, which may be a volume mount."""
+    destination.mkdir(parents=True, exist_ok=True)
+    for child in destination.iterdir():
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+    shutil.copytree(source, destination, dirs_exist_ok=True)
+
+
 async def download_transcripts(destination: Path, refresh: bool) -> Path:
     episodes = destination / "episodes"
     if episodes.exists() and not refresh:
@@ -86,9 +97,7 @@ async def download_transcripts(destination: Path, refresh: bool) -> Path:
         root = next((path for path in roots if (path / "episodes").exists()), None)
         if root is None:
             raise ValueError("Downloaded repository did not contain an episodes directory")
-        if destination.exists():
-            shutil.rmtree(destination)
-        shutil.copytree(root, destination)
+        replace_directory_contents(root, destination)
     logger.info("transcript_download_completed", extra={"destination": str(destination)})
     return destination
 
