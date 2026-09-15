@@ -34,7 +34,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+include = ["app*", "scripts*"]
 
 [tool.setuptools.package-data]
 app = ["static/*", "skills/*.md"]
