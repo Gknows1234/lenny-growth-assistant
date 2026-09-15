@@ -143,7 +143,7 @@ At startup, `scripts/ingest.py`:
 Refresh manually with `make ingest` or:
 
 ```bash
-docker compose exec api python scripts/ingest.py --refresh
+docker compose exec api python -m scripts.ingest --refresh
 ```
 
 Answers receive only retrieved passages labeled `[S1]`, `[S2]`, and so on. The prompt contract forbids
@@ -239,7 +239,7 @@ status, use `docker compose ps` and `/health/ready`.
 put the key in browser code or commit it.
 
 **The library shows zero episodes.** Network access may have blocked the archive download. Run
-`docker compose exec api python scripts/ingest.py --refresh`. To use an existing checkout, mount it into
+`docker compose exec api python -m scripts.ingest --refresh`. To use an existing checkout, mount it into
 the container and pass `--source /path/to/checkout`.
 
 **Database is unavailable.** Check `docker compose logs db`, verify port 5432 is free, and confirm the
